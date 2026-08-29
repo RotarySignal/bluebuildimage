@@ -1,0 +1,54 @@
+# SPDX-FileCopyrightText: Copyright 2025-2026 The Secureblue Authors
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: trivy
+permissions: {}
+on:
+  schedule:
+    - cron:
+        "00 8 * * *" # build at 8:00 UTC every day
+        # 120 minutes after secureblue images start building
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "**.md"
+
+  workflow_dispatch: # allow manually triggering builds
+
+jobs:
+  build:
+    name: Trivy
+    runs-on: ubuntu-slim
+    permissions:
+      security-events: write # write findings to github
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: "ghcr.io/rotarysignal/bluebuildimage:latest"
+          format: template
+          scanners: vuln,secret,misconfig
+          template: "@/contrib/sarif.tpl"
+          output: trivy-results.sarif
+          timeout: 30m0s
+          skip-dirs: "/sysroot/ostree"
+        env:
+          TRIVY_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-db,public.ecr.aws/aquasecurity/trivy-db
+          TRIVY_JAVA_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-java-db,public.ecr.aws/aquasecurity/trivy-java-db
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4.37.7
+        with:
+          sarif_file: trivy-results.sarif
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: Trivy scan SARIF
+          path: trivy-results.sarif
