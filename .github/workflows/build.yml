@@ -18,6 +18,7 @@ jobs:
   bluebuild:
     name: Build Custom Image
     runs-on: ubuntu-latest
+    environment: Build
     permissions:
       contents: read
       packages: write
