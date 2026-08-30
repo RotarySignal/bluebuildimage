@@ -1,4 +1,5 @@
-name: bluebuild
+name:
+permissions: {}
 on:
   schedule:
     - cron:
@@ -17,12 +18,12 @@ concurrency:
 jobs:
   bluebuild:
     name: Build Custom Image
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     environment: Build
     permissions:
-      contents: read
-      packages: write
-      id-token: write
+      contents: read # Needed to pull the repo for the build
+      packages: write # Needed to publish images
+      id-token: write # Needed for token generation for signing
     strategy:
       fail-fast: false # stop GH from cancelling all matrix builds if one fails
       matrix:
